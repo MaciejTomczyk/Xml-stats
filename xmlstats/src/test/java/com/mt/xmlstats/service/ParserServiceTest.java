@@ -13,17 +13,17 @@ import org.powermock.modules.junit4.PowerMockRunner;
 import org.xml.sax.SAXException;
 import org.xml.sax.helpers.DefaultHandler;
 
+import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.parsers.SAXParser;
 import javax.xml.parsers.SAXParserFactory;
 import java.util.Optional;
 
+import static org.hamcrest.CoreMatchers.is;
+import static org.junit.Assert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.*;
 import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
 import static org.powermock.api.mockito.PowerMockito.doNothing;
 import static org.powermock.api.mockito.PowerMockito.mock;
 import static org.powermock.api.mockito.PowerMockito.when;
@@ -50,19 +50,19 @@ public class ParserServiceTest {
         var url = "url";
 
         SAXParserFactory mockSaxFactory = mock(SAXParserFactory.class);
-        when(SAXParserFactory.newInstance()).thenReturn(mockSaxFactory);
         SAXParser saxParser = mock(SAXParser.class);
+        DefaultHandler defaultHandler = mock(DefaultHandler.class);
 
+        when(SAXParserFactory.newInstance()).thenReturn(mockSaxFactory);
         when(mockSaxFactory.newSAXParser()).thenReturn(saxParser);
         doNothing().when(saxParser).parse(anyString(), any(DefaultHandler.class));
         when(statsMapper.mapToDto(any())).thenReturn(new StatsDto());
 
         //when
-        var result = parserService.parseXml(url);
+        var result = parserService.parseXml(saxParser, url, defaultHandler);
 
         //then
         assertNotNull(result);
-        verify(statsMapper, times(1)).mapToDto(any());
         verify(saxParser, times(1)).parse(anyString(), any(DefaultHandler.class));
     }
 
@@ -72,19 +72,53 @@ public class ParserServiceTest {
         var url = "url";
 
         SAXParserFactory mockSaxFactory = mock(SAXParserFactory.class);
-        when(SAXParserFactory.newInstance()).thenReturn(mockSaxFactory);
         SAXParser saxParser = mock(SAXParser.class);
+        DefaultHandler defaultHandler = mock(DefaultHandler.class);
 
+
+        when(SAXParserFactory.newInstance()).thenReturn(mockSaxFactory);
         when(mockSaxFactory.newSAXParser()).thenReturn(saxParser);
         doThrow(SAXException.class).when(saxParser).parse(anyString(), any(DefaultHandler.class));
 
         //when
-        var result = parserService.parseXml(url);
+        var result = parserService.parseXml(saxParser, url, defaultHandler);
 
         //then
-        assertNotNull(result);
         assertEquals(Optional.empty(), result);
         verify(statsMapper, times(0)).mapToDto(any());
         verify(saxParser, times(1)).parse(anyString(), any(DefaultHandler.class));
+    }
+
+    @Test
+    public void prepareParser() throws ParserConfigurationException, SAXException {
+        //given
+
+        SAXParserFactory mockSaxFactory = mock(SAXParserFactory.class);
+        SAXParser saxParser = mock(SAXParser.class);
+
+        when(SAXParserFactory.newInstance()).thenReturn(mockSaxFactory);
+        when(mockSaxFactory.newSAXParser()).thenReturn(saxParser);
+
+        //when
+        Optional<SAXParser> result = parserService.prepareParser();
+
+        //then
+        assertNotNull(result);
+    }
+
+    @Test
+    public void prepareParserThrowException() throws ParserConfigurationException, SAXException {
+        //given
+
+        SAXParserFactory mockSaxFactory = mock(SAXParserFactory.class);
+
+        when(SAXParserFactory.newInstance()).thenReturn(mockSaxFactory);
+        when(mockSaxFactory.newSAXParser()).thenThrow(SAXException.class);
+
+        //when
+        Optional<SAXParser> result = parserService.prepareParser();
+
+        //then
+        assertThat(result, is(Optional.empty()));
     }
 }

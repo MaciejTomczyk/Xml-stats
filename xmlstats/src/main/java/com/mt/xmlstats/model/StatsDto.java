@@ -19,5 +19,5 @@ public class StatsDto implements Serializable {
     private static final long serialVersionUID = 8766454343243244343L;
 
     private LocalDateTime date;
-    private Stats details;
+    private StatsDetailsDto details;
 }

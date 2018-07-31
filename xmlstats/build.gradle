@@ -13,6 +13,10 @@ buildscript {
     }
 }
 
+plugins {
+    id "com.avast.gradle.docker-compose" version "0.7.1"
+}
+
 apply plugin: 'java'
 apply plugin: 'org.springframework.boot'
 apply plugin: 'io.spring.dependency-management'
@@ -24,9 +28,6 @@ sourceCompatibility = 1.10
 
 repositories {
     mavenCentral()
-    maven {
-        url 'https://dl.bintray.com/palantir/releases'
-    }
 }
 
 
@@ -34,6 +35,7 @@ dependencies {
     compile 'org.springframework.boot:spring-boot-starter-web'
     compile 'org.apache.commons:commons-lang3:3.7'
     compileOnly 'org.projectlombok:lombok:1.18.2'
+    testCompile 'org.springframework.boot:spring-boot-starter-test'
     testCompile "org.junit.jupiter:junit-jupiter-engine:${jUnitVersion}"
     testCompile "org.junit.jupiter:junit-jupiter-api:${jUnitVersion}"
     testCompile "org.junit.vintage:junit-vintage-engine:${jUnitVersion}"
@@ -70,3 +72,35 @@ jacocoTestReport {
 }
 
 test.finalizedBy('jacocoTestReport')
+test.finalizedBy('integrationTest')
+
+
+sourceSets {
+    integrationTest {
+        java {
+            compileClasspath += main.output + test.output + main.compileClasspath + test.compileClasspath
+            runtimeClasspath += main.output + test.output + main.runtimeClasspath + test.runtimeClasspath
+            srcDir file('src/integration-test/java')
+        }
+        resources.srcDir file('src/integration-test/resources')
+    }
+}
+
+configurations {
+    integrationTestCompile.extendsFrom testCompile
+    integrationTestRuntime.extendsFrom testRuntime
+}
+
+task integrationTest(type: Test, group: 'verification') {
+    doFirst {
+        dockerCompose.exposeAsEnvironment(integrationTest)
+    }
+    testClassesDirs = sourceSets.integrationTest.output.classesDirs
+    classpath = sourceSets.integrationTest.runtimeClasspath
+}
+
+dockerCompose.isRequiredBy(integrationTest)
+
+dockerCompose {
+    useComposeFiles = ["src/integration-test/resources/docker-compose.yml"]
+}
