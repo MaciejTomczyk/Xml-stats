@@ -38,9 +38,8 @@ public class XmlService {
     private <R, T> Optional<R> processXml(@NotNull String url, DefaultHandler handler,
                                           Function<DefaultHandler, T> handlerCaster, Function<T, R> mapper) {
         return parserService.prepareParser()
-                .map(parser -> parserService.parseXml(parser, url, handler))
-                .filter(Optional::isPresent)
-                .map(i -> handlerCaster.apply(i.get()))
+                .flatMap(parser -> parserService.parseXml(parser, url, handler))
+                .map(handlerCaster::apply)
                 .map(mapper);
     }
 

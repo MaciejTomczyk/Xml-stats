@@ -10,6 +10,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import javax.validation.Valid;
+
 @RestController
 @RequestMapping("/analyze")
 public class XmlController {
@@ -18,7 +20,7 @@ public class XmlController {
     private XmlService xmlService;
 
     @PostMapping
-    public ResponseEntity<StatsDto> analyzeXml(@RequestBody UrlWrapper urlWrapper) {
+    public ResponseEntity<StatsDto> analyzeXml(@RequestBody @Valid UrlWrapper urlWrapper) {
         return xmlService.getXmlStats(urlWrapper.getUrl())
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.badRequest().build());

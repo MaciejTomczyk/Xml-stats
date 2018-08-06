@@ -1,5 +1,6 @@
 package com.mt.xmlstats;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mt.xmlstats.mapper.StatsMapper;
 import com.mt.xmlstats.model.UrlWrapper;
@@ -61,6 +62,16 @@ public class XmlStatsIT {
     public void shouldThrowBadRequest() throws Exception {
         UrlWrapper urlWrapper = new UrlWrapper();
         urlWrapper.setUrl(INVALID_PATH);
+        mockMvc.perform(post(ANALYZE_ENDPOINT)
+                .content(objectMapper.writeValueAsString(urlWrapper))
+                .contentType(MediaType.APPLICATION_JSON_UTF8))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    public void shouldFailValidation() throws Exception {
+        UrlWrapper urlWrapper = new UrlWrapper();
+        urlWrapper.setUrl(null);
         mockMvc.perform(post(ANALYZE_ENDPOINT)
                 .content(objectMapper.writeValueAsString(urlWrapper))
                 .contentType(MediaType.APPLICATION_JSON_UTF8))
